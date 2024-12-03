@@ -9,6 +9,7 @@ import uuid
 import os
 import websockets  # WebSocketモジュール
 
+
 # UUIDを保存するファイルのパス（スクリプトと同じディレクトリに保存）
 UUID_FILE_PATH = os.path.join(os.path.dirname(__file__), "robot_uuid.txt")
 
@@ -31,7 +32,7 @@ class RosStatePublisher(Node):
         self.get_logger().info(f"Using UUID: {self.unique_id}")
 
         # WebSocket URLの設定
-        self.websocket_url = f"ws://127.0.0.1:8000/ws/robots/?unique_robot_id={self.unique_id}"
+        self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
 
         # 状態キーと初期値を設定
         self.state_keys = {key: "unknown" for key in [sub["state_key"] for sub in config.TOPIC_SUBSCRIPTIONS]}

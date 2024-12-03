@@ -1,7 +1,7 @@
 
 # ロボット設定
 ROBOT_ID = "your_robot_id"  # ロボットIDを定義してください
-OWNER_NAME = "guest"  # オーナー名を定義してください　※WEBサービスのサインアップ名と一致している必要があります
+OWNER_NAME = "charachi"  # オーナー名を定義してください　※WEBサービスのサインアップ名と一致している必要があります
 
 # 購読トピック設定
 TOPIC_SUBSCRIPTIONS = [
