@@ -1,10 +1,11 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile
 import asyncio
 import json
 from threading import Thread
 import importlib
-import config
+import RTM_contest_2024.scripts.RTMcontest_2024_RTMS_scripts.ros2.scripts.your_package_name_scripts.config as config
 import uuid
 import os
 import websockets  # WebSocketモジュール
@@ -37,6 +38,7 @@ class RosStatePublisher(Node):
         # 状態キーと初期値を設定
         self.state_keys = {key: "unknown" for key in [sub["state_key"] for sub in config.TOPIC_SUBSCRIPTIONS]}
         self.states = self.state_keys.copy()  # statesはstate_keysのコピーで初期化
+        qos_profile = QoSProfile(depth=10)
 
         # トピック購読設定を動的に読み込む
         for subscription in config.TOPIC_SUBSCRIPTIONS:
@@ -48,7 +50,7 @@ class RosStatePublisher(Node):
                 message_type,
                 subscription["topic"],
                 lambda msg, key=subscription["state_key"], callback=callback_function: self.dynamic_callback(key, callback, msg),
-                10
+                qos_profile
             )
 
         # WebSocket送信用のスレッドを開始
@@ -56,10 +58,8 @@ class RosStatePublisher(Node):
         self.send_thread = Thread(target=self.start_websocket_loop, daemon=True)
         self.send_thread.start()
 
+    # uuid取得, 生成
     def get_or_create_uuid(self):
-        """
-        UUIDをファイルから読み込むか、新規作成して保存する。
-        """
         if os.path.exists(UUID_FILE_PATH):
             with open(UUID_FILE_PATH, "r") as file:
                 unique_id = file.read().strip()
@@ -74,18 +74,11 @@ class RosStatePublisher(Node):
 
     # 動的コールバック関数
     def dynamic_callback(self, state_key, user_callback, msg):
-        """
-        状態の更新処理を行い、更新前後の状態をログに出力
-        """
-        self.get_logger().info(f"Before update {state_key}: {self.states.get(state_key, 'Not Found')}")  # 更新前の状態をログ出力
         user_callback(self.states, msg)  # コールバックで状態を更新
-        self.get_logger().info(f"After update {state_key}: {self.states.get(state_key, 'Not Found')}")  # 更新後の状態をログ出力
-
+        
     # WebSocket送信データ生成
     def generate_payload(self):
-        """
-        WebSocketで送信する情報を生成
-        """
+
         return {
             "robot_id": self.robot_id,
             "owner": self.owner,
@@ -95,22 +88,18 @@ class RosStatePublisher(Node):
 
     # WebSocketで状態を送信
     async def send_state(self):
-        """
-        WebSocket接続を確立し、定期的にロボット状態を送信。
-        接続エラー時には再接続を試みる。
-        """
         while self.running:
             try:
                 async with websockets.connect(self.websocket_url) as websocket:
                     self.get_logger().info("WebSocket connected.")
                     while self.running:
                         try:
-                            # WebSocketでpingメッセージを受け取る部分を追加
-                            message = await websocket.recv()  # メッセージを受信
-                            data = json.loads(message)
-                            if "ping" in data:  # pingメッセージを受け取った場合
-                                self.get_logger().info("Received ping, sending pong.")
-                                await websocket.send(json.dumps({"pong": True}))  # pongを送信
+                            # WebSocketでpingメッセージを受け取る部分を追加(実装中)
+                            # message = await websocket.recv()  # メッセージを受信
+                            # data = json.loads(message)
+                            # if "ping" in data:  # pingメッセージを受け取った場合
+                            #     self.get_logger().info("Received ping, sending pong.")
+                            #     await websocket.send(json.dumps({"pong": True}))  # pongを送信
 
                             # 状態を送信
                             payload = self.generate_payload()
@@ -125,36 +114,27 @@ class RosStatePublisher(Node):
                 await asyncio.sleep(5)  # 再接続までの待機時間
 
     def start_websocket_loop(self):
-        """
-        WebSocket送信用の非同期イベントループを開始。
-        """
         asyncio.run(self.send_state())
 
     def on_shutdown(self):
-        """
-        ノードのシャットダウン処理。
-        """
         self.get_logger().info("Shutting down...")
-        self.running = False  # スレッドのループを終了
+        self.running = False  
         if self.send_thread.is_alive():
-            self.send_thread.join()  # スレッドを終了
+            self.send_thread.join()  # スレッド終了
         self.get_logger().info("WebSocket thread stopped.")
 
 def main(args=None):
-    """
-    エントリーポイント。
-    ノードの初期化、スピン、および終了処理を実行。
-    """
-    rclpy.init(args=args)  # ROS 2の初期化
+
+    rclpy.init(args=args)  # ROS2初期化
     node = RosStatePublisher()
     try:
-        rclpy.spin(node)  # ノードをスピン
+        rclpy.spin(node) 
     except KeyboardInterrupt:
-        pass  # Ctrl+Cで終了
+        pass
     finally:
-        node.on_shutdown()  # シャットダウン処理
-        node.destroy_node()  # ノードの破棄
-        rclpy.shutdown()  # ROS 2のシャットダウン
+        node.on_shutdown() 
+        node.destroy_node()
+        rclpy.shutdown()  # ROS2のシャットダウン
 
 if __name__ == '__main__':
     main()
