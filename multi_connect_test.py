@@ -35,8 +35,8 @@ class RobotStatePublisher:
         await asyncio.sleep(initial_delay)
 
         while True:
-                async with websockets.connect(self.server_url) as websocket:
-                    logger.info(f"[{self.unique_id}] Connected to server at {self.server_url}")
+                async with websockets.connect(self.websocket_url) as websocket:
+                    logger.info(f"[{self.unique_id}] Connected to server at {self.websocket_url}")
                     while True:
                         state_data = self.generate_state()
                         await websocket.send(json.dumps(state_data))
