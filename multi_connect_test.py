@@ -4,8 +4,8 @@ import json
 import random
 import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 class RobotStatePublisher:
     def __init__(self, robot_id, owner, unique_id):
@@ -20,11 +20,11 @@ class RobotStatePublisher:
             "owner": self.owner,
             "unique_id": self.unique_id,
             "state": {
-                "pos_x": f"{random.randint(0, 100)}", 
-                "pos_y": f"{random.randint(0, 100)}", 
-                "dummy1": f"{random.randint(0, 100)}", 
-                "dummy2": f"{random.randint(0, 100)}",
-                "dummy3": f"{random.randint(0, 100)}",
+                "pos_x": f"{random.randint(1, 10)}", 
+                "pos_y": f"{random.randint(1, 10)}", 
+                "dummy1": f"{random.randint(1, 10)}", 
+                "dummy2": f"{random.randint(1, 10)}",
+                "dummy3": f"{random.randint(1, 10)}",
                 "status": "active" if random.choice([True, False]) else "idle" 
             },
         }
@@ -36,11 +36,11 @@ class RobotStatePublisher:
 
         while True:
                 async with websockets.connect(self.websocket_url) as websocket:
-                    logger.info(f"[{self.unique_id}] Connected to server at {self.websocket_url}")
+                    # logger.info(f"[{self.unique_id}] Connected to server at {self.websocket_url}")
                     while True:
                         state_data = self.generate_state()
                         await websocket.send(json.dumps(state_data))
-                        logger.info(f"[{self.unique_id}] Sent data: {state_data}")
+                        # logger.info(f"[{self.unique_id}] Sent data: {state_data}")
                         await asyncio.sleep(1) 
 
 async def main():
