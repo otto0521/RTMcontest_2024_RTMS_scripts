@@ -27,8 +27,8 @@ class RosStatePublisher(Node):
         self.unique_id = self.get_or_create_uuid()
         self.get_logger().info(f"Using UUID: {self.unique_id}")
 
-        # self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
-        self.websocket_url = f"ws://localhost:8000//ws/robots/?unique_robot_id={self.unique_id}"
+        self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
+        # self.websocket_url = f"ws://localhost:8000//ws/robots/?unique_robot_id={self.unique_id}"
 
         self.state_keys = {key: "unknown" for key in [sub["state_key"] for sub in config.TOPIC_SUBSCRIPTIONS]}
         self.states = self.state_keys.copy() 

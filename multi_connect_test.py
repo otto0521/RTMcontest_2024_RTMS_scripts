@@ -12,8 +12,8 @@ class RobotStatePublisher:
         self.robot_id = robot_id
         self.owner = owner
         self.unique_id = unique_id
-        # self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
-        self.websocket_url = f"ws://localhost:8000/ws/robots/?unique_robot_id={self.unique_id}"
+        self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
+        # self.websocket_url = f"ws://localhost:8000/ws/robots/?unique_robot_id={self.unique_id}"
         
         
 
@@ -42,7 +42,7 @@ class RobotStatePublisher:
                     state_data = self.generate_state()
                     await websocket.send(json.dumps(state_data))
                     # logger.info(f"[{self.unique_id}] Sent data: {state_data}")
-                    await asyncio.sleep(0.2)  # 0.2秒間隔に変更
+                    await asyncio.sleep(0.2)  # 0.2秒間隔
 
 async def main():
     publishers = [
