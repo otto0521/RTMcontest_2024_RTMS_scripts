@@ -5,16 +5,13 @@ import asyncio
 import json
 from threading import Thread
 import importlib
-import RTM_contest_2024.scripts.RTMcontest_2024_RTMS_scripts.ros2.scripts.your_package_name_scripts.config as config
+import config
 import uuid
 import os
-import websockets  # WebSocketモジュール
+import websockets  
 
-
-# UUIDを保存するファイルのパス（スクリプトと同じディレクトリに保存）
 UUID_FILE_PATH = os.path.join(os.path.dirname(__file__), "robot_uuid.txt")
 
-# 動的にメッセージ型をインポートする関数
 def import_message_type(type_str):
     module_name, class_name = type_str.rsplit(".", 1)
     module = importlib.import_module(module_name)
@@ -24,42 +21,36 @@ class RosStatePublisher(Node):
     def __init__(self):
         super().__init__('ros_state_publisher')
 
-        # ユーザー設定を読み込み
-        self.robot_id = config.ROBOT_ID  # ロボットID
-        self.owner = config.OWNER_NAME  # オーナー名
+        self.robot_id = config.ROBOT_ID  
+        self.owner = config.OWNER_NAME 
 
-        # UUIDの読み込みまたは生成
         self.unique_id = self.get_or_create_uuid()
         self.get_logger().info(f"Using UUID: {self.unique_id}")
 
-        # WebSocket URLの設定
-        self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
+        # self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
+        self.websocket_url = f"ws://localhost:8000//ws/robots/?unique_robot_id={self.unique_id}"
 
-        # 状態キーと初期値を設定
         self.state_keys = {key: "unknown" for key in [sub["state_key"] for sub in config.TOPIC_SUBSCRIPTIONS]}
-        self.states = self.state_keys.copy()  # statesはstate_keysのコピーで初期化
+        self.states = self.state_keys.copy() 
         qos_profile = QoSProfile(depth=10)
 
-        # トピック購読設定を動的に読み込む
         for subscription in config.TOPIC_SUBSCRIPTIONS:
-            message_type = import_message_type(subscription["message_type"])  # メッセージ型を動的にインポート
-            callback_function = getattr(config, subscription["callback"])  # コールバック関数を設定
+            message_type = import_message_type(subscription["message_type"])  
+            callback_function = getattr(config, subscription["callback"])  
 
-            # lambda を使って dynamic_callback を呼び出す
             self.create_subscription(
                 message_type,
                 subscription["topic"],
-                lambda msg, key=subscription["state_key"], callback=callback_function: self.dynamic_callback(key, callback, msg),
+                lambda msg, key=subscription["state_key"], callback=callback_function: self.dynamic_callback(callback, msg),
                 qos_profile
             )
-
-        # WebSocket送信用のスレッドを開始
+        
         self.running = True
         self.send_thread = Thread(target=self.start_websocket_loop, daemon=True)
         self.send_thread.start()
 
-    # uuid取得, 生成
     def get_or_create_uuid(self):
+
         if os.path.exists(UUID_FILE_PATH):
             with open(UUID_FILE_PATH, "r") as file:
                 unique_id = file.read().strip()
@@ -72,11 +63,10 @@ class RosStatePublisher(Node):
                 self.get_logger().info(f"Generated and saved new UUID: {unique_id}")
             return unique_id
 
-    # 動的コールバック関数
-    def dynamic_callback(self, state_key, user_callback, msg):
-        user_callback(self.states, msg)  # コールバックで状態を更新
-        
-    # WebSocket送信データ生成
+
+    def dynamic_callback(self, user_callback, msg):
+        user_callback(self.states, msg) 
+    
     def generate_payload(self):
 
         return {
@@ -86,55 +76,58 @@ class RosStatePublisher(Node):
             "state": self.states,
         }
 
-    # WebSocketで状態を送信
     async def send_state(self):
         while self.running:
             try:
+                self.get_logger().info(f"Attempting WebSocket connection to {self.websocket_url}")
                 async with websockets.connect(self.websocket_url) as websocket:
                     self.get_logger().info("WebSocket connected.")
                     while self.running:
                         try:
-                            # WebSocketでpingメッセージを受け取る部分を追加(実装中)
+
                             # message = await websocket.recv()  # メッセージを受信
                             # data = json.loads(message)
                             # if "ping" in data:  # pingメッセージを受け取った場合
                             #     self.get_logger().info("Received ping, sending pong.")
                             #     await websocket.send(json.dumps({"pong": True}))  # pongを送信
 
-                            # 状態を送信
+                            # メッセージ送受信デバッグ
                             payload = self.generate_payload()
-                            await websocket.send(json.dumps(payload))  # 状態を送信
-                            self.get_logger().info(f"Sent data via WebSocket: {payload}")
-                            await asyncio.sleep(1)  # 1秒間隔で送信
+                            self.get_logger().info(f"Sending payload: {payload}")
+                            await websocket.send(json.dumps(payload))
+                            self.get_logger().info("Payload sent successfully.")
+                            await asyncio.sleep(0.2)  # 状態更新の間隔
                         except Exception as e:
-                            self.get_logger().error(f"Error receiving or sending WebSocket message: {e}")
-                            break  # 再接続のためにループを抜ける
+                            self.get_logger().error(f"Error during WebSocket send/recv: {e}")
+                            break  # ループを抜けて再接続を試みる
             except Exception as e:
                 self.get_logger().error(f"WebSocket connection error: {e}")
-                await asyncio.sleep(5)  # 再接続までの待機時間
+                await asyncio.sleep(5)  # 再接続待機
+
 
     def start_websocket_loop(self):
         asyncio.run(self.send_state())
 
     def on_shutdown(self):
+
         self.get_logger().info("Shutting down...")
         self.running = False  
         if self.send_thread.is_alive():
-            self.send_thread.join()  # スレッド終了
+            self.send_thread.join()  
         self.get_logger().info("WebSocket thread stopped.")
 
 def main(args=None):
 
-    rclpy.init(args=args)  # ROS2初期化
+    rclpy.init(args=args) 
     node = RosStatePublisher()
     try:
         rclpy.spin(node) 
     except KeyboardInterrupt:
-        pass
+        pass 
     finally:
         node.on_shutdown() 
-        node.destroy_node()
-        rclpy.shutdown()  # ROS2のシャットダウン
+        node.destroy_node() 
+        rclpy.shutdown()  
 
 if __name__ == '__main__':
     main()

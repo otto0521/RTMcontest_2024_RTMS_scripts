@@ -12,9 +12,12 @@ class RobotStatePublisher:
         self.robot_id = robot_id
         self.owner = owner
         self.unique_id = unique_id
-        self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
-    def generate_state(self):
+        # self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
+        self.websocket_url = f"ws://localhost:8000/ws/robots/?unique_robot_id={self.unique_id}"
+        
+        
 
+    def generate_state(self):
         return {
             "robot_id": self.robot_id,
             "owner": self.owner,
@@ -22,29 +25,26 @@ class RobotStatePublisher:
             "state": {
                 "pos_x": f"{random.randint(1, 10)}", 
                 "pos_y": f"{random.randint(1, 10)}", 
-                "dummy1": f"{random.randint(1, 10)}", 
-                "dummy2": f"{random.randint(1, 10)}",
-                "dummy3": f"{random.randint(1, 10)}",
-                "status": "active" if random.choice([True, False]) else "idle" 
+                "speed": f"{random.randint(30, 50)}", 
+                "current": f"{random.randint(10, 30)}",
+                "occupancy rate": f"{random.randint(62, 70)}",
             },
         }
 
     async def send_state(self):
-
         initial_delay = random.uniform(0, 1)
         await asyncio.sleep(initial_delay)
 
         while True:
-                async with websockets.connect(self.websocket_url) as websocket:
-                    # logger.info(f"[{self.unique_id}] Connected to server at {self.websocket_url}")
-                    while True:
-                        state_data = self.generate_state()
-                        await websocket.send(json.dumps(state_data))
-                        # logger.info(f"[{self.unique_id}] Sent data: {state_data}")
-                        await asyncio.sleep(1) 
+            async with websockets.connect(self.websocket_url) as websocket:
+                # logger.info(f"[{self.unique_id}] Connected to server at {self.websocket_url}")
+                while True:
+                    state_data = self.generate_state()
+                    await websocket.send(json.dumps(state_data))
+                    # logger.info(f"[{self.unique_id}] Sent data: {state_data}")
+                    await asyncio.sleep(0.2)  # 0.2秒間隔に変更
 
 async def main():
-
     publishers = [
         RobotStatePublisher("web_test_1", "tester", "web_test_1_uuid"),
         RobotStatePublisher("web_test_2", "tester", "web_test_2_uuid"),

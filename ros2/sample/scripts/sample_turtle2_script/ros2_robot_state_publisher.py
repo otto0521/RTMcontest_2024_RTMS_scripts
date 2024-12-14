@@ -27,8 +27,9 @@ class RosStatePublisher(Node):
         self.unique_id = self.get_or_create_uuid()
         self.get_logger().info(f"Using UUID: {self.unique_id}")
 
-        self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
-
+         # self.websocket_url = f"wss://monitoring.ddns.net/ws/robots/?unique_robot_id={self.unique_id}"
+        self.websocket_url = f"ws://localhost:8000//ws/robots/?unique_robot_id={self.unique_id}"
+        
         self.state_keys = {key: "unknown" for key in [sub["state_key"] for sub in config.TOPIC_SUBSCRIPTIONS]}
         self.states = self.state_keys.copy() 
         qos_profile = QoSProfile(depth=10)
@@ -95,7 +96,7 @@ class RosStatePublisher(Node):
                             self.get_logger().info(f"Sending payload: {payload}")
                             await websocket.send(json.dumps(payload))
                             self.get_logger().info("Payload sent successfully.")
-                            await asyncio.sleep(1)  # 状態更新の間隔
+                            await asyncio.sleep(0.2)  # 状態更新の間隔
                         except Exception as e:
                             self.get_logger().error(f"Error during WebSocket send/recv: {e}")
                             break  # ループを抜けて再接続を試みる
