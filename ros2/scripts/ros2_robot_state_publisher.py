@@ -91,18 +91,15 @@ class RosStatePublisher(Node):
                             #     self.get_logger().info("Received ping, sending pong.")
                             #     await websocket.send(json.dumps({"pong": True}))  # pongを送信
 
-                            # メッセージ送受信デバッグ
                             payload = self.generate_payload()
-                            self.get_logger().info(f"Sending payload: {payload}")
                             await websocket.send(json.dumps(payload))
-                            self.get_logger().info("Payload sent successfully.")
-                            await asyncio.sleep(0.2)  # 状態更新の間隔
+                            await asyncio.sleep(0.2)
                         except Exception as e:
                             self.get_logger().error(f"Error during WebSocket send/recv: {e}")
-                            break  # ループを抜けて再接続を試みる
+                            break  
             except Exception as e:
                 self.get_logger().error(f"WebSocket connection error: {e}")
-                await asyncio.sleep(5)  # 再接続待機
+                await asyncio.sleep(5) 
 
 
     def start_websocket_loop(self):

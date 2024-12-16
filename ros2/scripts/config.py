@@ -1,7 +1,7 @@
 
 # ロボット設定
-ROBOT_ID = "turtle1"  # ロボットIDを定義してください
-OWNER_NAME = "tester"  # オーナー名を定義してください　※WEBサービスのサインアップ名と一致している必要があります
+ROBOT_ID = "default"  # ロボットIDを定義してください
+OWNER_NAME = "default"  # オーナー名を定義してください　※WEBサービスのサインアップ名と一致している必要があります
 
 # 購読トピック設定
 TOPIC_SUBSCRIPTIONS = [
